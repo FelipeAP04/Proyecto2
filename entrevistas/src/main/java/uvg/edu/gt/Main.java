@@ -1,9 +1,12 @@
 package uvg.edu.gt;
 
 import java.util.Scanner;
+import org.neo4j.driver.*;
+import org.neo4j.driver.Record;
 
 public class Main {
     public static void main(String[] args) {
+        System.out.println("Hello world!");
         Scanner scanner = new Scanner(System.in);
 
         System.out.println("¡Hola! Vamos a encontrar el perro perfecto para ti.");
@@ -33,15 +36,59 @@ public class Main {
         System.out.println("¿Tienes alguna alergia? (si/no)");
         String alergia = scanner.nextLine();
         
-        System.out.println("¡Gracias por responder las preguntas!");
-        System.out.println("Aquí está un resumen de tus respuestas:");
-        System.out.println("Color preferido del perro: " + color);
-        System.out.println("Tamaño preferido del perro: " + tamaño);
-        System.out.println("Tipo de pelo preferido: " + pelo);
-        System.out.println("Personalidad preferida del perro: " + personalidad);
-        System.out.println("Tamaño de espacio disponible: " + tamañoEspacio);
-        System.out.println("Edad: " + edad + " años");
-        System.out.println("¿Vives solo? " + viveSolo);
-        System.out.println("¿Tienes alguna alergia? " + alergia);
+
+    @SuppressWarnings("deprecation")
+        Driver driver = GraphDatabase.driver(
+                "bolt://localhost:7687",
+                AuthTokens.basic(
+                        "neo4j",
+                        "MarR3-18"
+
+                        ));
+
+        try (Session session = driver.session()) {
+
+            session.writeTransaction(tx -> {
+                tx.run("CREATE (user:Raza {name:'Chihuaha'})");
+                tx.run("CREATE (user:Tamaño {name:'pequeño'})");
+                tx.run("CREATE (user:Pelo {name:'liso'})");
+                tx.run("CREATE (user:Personalidad {name:'Protector'})");
+                tx.run("CREATE (user:color {name:'cafe'})");
+                return null;
+            });
+
+            Result result = session.run("MATCH (n) RETURN n.name AS name");
+            while (result.hasNext()) {
+                Record record = result.next();
+                String name = record.get("name").asString();
+                System.out.println("Name: " + name);
+            }
+
+            result = session.run("""
+                    MATCH (p:Raza {name:"Name"}), (t:Tamaño {name:"pequeño"})
+                    MERGE (p)-[e:WATCH]-(a)
+                    RETURN p.name, e, a.name
+                    """
+            );
+
+
+            while (result.hasNext()) {
+                Record record = result.next();
+                System.out.println(record);
+            }
+
+
+            result = session.run("MATCH (n) RETURN n.name AS name");
+            while (result.hasNext()) {
+                Record record = result.next();
+                String name = record.get("name").asString();
+                System.out.println("Name: " + name);
+            }
+
+ 
+
+        } finally {
+            driver.close();
+        }
     }
 }
